@@ -16,6 +16,7 @@ let BasicsService = class BasicsService {
             function: 'Get Example',
         };
     }
+    ;
     getConParametros(parametro) {
         return {
             service: 'Blog-Backend',
@@ -24,6 +25,7 @@ let BasicsService = class BasicsService {
             parametroRecibido: parametro
         };
     }
+    ;
     postFunction(bodyPost) {
         return {
             service: 'Blog-Backend',
@@ -32,6 +34,7 @@ let BasicsService = class BasicsService {
             bodyRecibido: bodyPost
         };
     }
+    ;
     putFunction(bodyPost, parametro) {
         return {
             service: 'Blog-Backend',
@@ -41,6 +44,7 @@ let BasicsService = class BasicsService {
             parametro: parametro
         };
     }
+    ;
     deleteFunction(parametro) {
         return {
             service: 'Blog-Backend',
@@ -49,9 +53,32 @@ let BasicsService = class BasicsService {
             parametro: parametro
         };
     }
+    ;
+    calculotriangulo(body) {
+        const result = (body.base * body.altura) / 2;
+        return {
+            service: 'Blog-Backend',
+            controller: '/basics tipo delete',
+            function: 'Calculo del area de un triangulo',
+            parametro: body,
+            resultado: result
+        };
+    }
+    areaRectangulo(ancho, alto) {
+        const result = ancho * alto;
+        return {
+            service: 'Blog-Backend',
+            controller: '/basics tipo delete',
+            function: 'calculo-area-rectangulo/:ancho/:alto',
+            ancho: ancho,
+            alto: alto,
+            resultado: result
+        };
+    }
 };
 exports.BasicsService = BasicsService;
 exports.BasicsService = BasicsService = __decorate([
     (0, common_1.Injectable)()
 ], BasicsService);
+;
 //# sourceMappingURL=basics.service.js.map

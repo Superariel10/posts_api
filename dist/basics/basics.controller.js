@@ -35,6 +35,12 @@ let BasicsController = class BasicsController {
     delete(id) {
         return this.basicsService.deleteFunction(id);
     }
+    calculotriangulo(bodyPost) {
+        return this.basicsService.calculotriangulo(bodyPost);
+    }
+    areaRectangulo(ancho, alto) {
+        return this.basicsService.areaRectangulo(ancho, alto);
+    }
 };
 exports.BasicsController = BasicsController;
 __decorate([
@@ -72,6 +78,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], BasicsController.prototype, "delete", null);
+__decorate([
+    (0, common_1.Post)('calculo-area-triangulo'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], BasicsController.prototype, "calculotriangulo", null);
+__decorate([
+    (0, common_1.Get)('calculo-area-rectangulo/:ancho/:alto'),
+    __param(0, (0, common_1.Param)('ancho')),
+    __param(1, (0, common_1.Param)('alto')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", void 0)
+], BasicsController.prototype, "areaRectangulo", null);
 exports.BasicsController = BasicsController = __decorate([
     (0, common_1.Controller)('basics'),
     __metadata("design:paramtypes", [basics_service_1.BasicsService])

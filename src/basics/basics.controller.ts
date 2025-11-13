@@ -23,7 +23,18 @@ export class BasicsController {
       }  
      @Delete(':id')
      delete(@Param('id') id: string) {
-         return this.basicsService.deleteFunction(id);
-      }     
-} 
+         return this.basicsService.deleteFunction(id); 
+    }
+     @Post('calculo-area-triangulo')
+     calculotriangulo(@Body() bodyPost: object) {
+         return this.basicsService.calculotriangulo(bodyPost);
+    }
+     @Get('calculo-area-rectangulo/:ancho/:alto')
+     areaRectangulo(   
+     @Param('ancho') ancho: number,
+     @Param('alto') alto: number,
+    ){
+         return this.basicsService.areaRectangulo(ancho, alto);    
+    }
+}
 

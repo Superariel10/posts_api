@@ -7,4 +7,6 @@ export declare class BasicsController {
     create(bodyPost: object): object;
     update(bodyPost: object, id: string): object;
     delete(id: string): object;
+    calculotriangulo(bodyPost: object): object;
+    areaRectangulo(ancho: number, alto: number): object;
 }
