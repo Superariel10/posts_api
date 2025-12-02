@@ -1,15 +1,16 @@
+import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   paginate,
-  IPaginationOptions,
-  Pagination,
+  Pagination
 } from 'nestjs-typeorm-paginate';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import * as bcrypt from 'bcrypt';
+import { QueryDto } from 'src/common/dto/query.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -32,15 +33,52 @@ export class UsersService {
   }
 
   async findAll(
-    options: IPaginationOptions,
+    queryDto: QueryDto,
     isActive?: boolean,
   ): Promise<Pagination<User> | null> {
     try {
+      const { page, limit, search, searchField, sort, order } = queryDto;
+
       const query = this.userRepository.createQueryBuilder('user');
+
       if (isActive !== undefined) {
-        query.where('user.isActive = :isActive', { isActive });
+        query.andWhere('user.isActive = :isActive', { isActive });
       }
-      return await paginate<User>(query, options);
+
+      if (search) {
+        if (searchField) {
+          // El frontend decide el campo de filtro
+          switch (searchField) {
+            case 'username':
+              query.andWhere('user.username ILIKE :search', {
+                search: `%${search}%`,
+              });
+              break;
+            case 'email':
+              query.andWhere('user.email ILIKE :search', {
+                search: `%${search}%`,
+              });
+              break;
+            default:
+              query.andWhere(
+                '(user.username ILIKE :search OR user.email ILIKE :search)',
+                { search: `%${search}%` },
+              );
+          }
+        } else {
+          // Búsqueda por defecto si no se envía searchField
+          query.andWhere(
+            '(user.username ILIKE :search OR user.email ILIKE :search)',
+            { search: `%${search}%` },
+          );
+        }
+      }
+
+      if (sort) {
+        query.orderBy(`user.${sort}`, (order ?? 'ASC') as 'ASC' | 'DESC');
+      }
+
+      return await paginate<User>(query, { page, limit });
     } catch (err) {
       console.error('Error retrieving users:', err);
       return null;
@@ -68,14 +106,14 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User | null> {
     try {
       const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) return null;
+      if (!user) return null;
 
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
+      if (updateUserDto.password) {
+        updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+      }
 
-    Object.assign(user, updateUserDto);
-    return this.userRepository.save(user);
+      Object.assign(user, updateUserDto);
+      return await this.userRepository.save(user);
     } catch (err) {
       console.error('Error updating user:', err);
       return null;

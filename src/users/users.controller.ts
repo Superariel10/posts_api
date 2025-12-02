@@ -12,10 +12,11 @@ import { Pagination } from 'nestjs-typeorm-paginate';
 import { User } from './user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { QueryDto } from 'src/common/dto/query.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
@@ -25,14 +26,22 @@ export class UsersController {
 
   @Get()
   async findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query() query: QueryDto,
     @Query('isActive') isActive?: string,
   ): Promise<SuccessResponseDto<Pagination<User>>> {
+    if (query.limit && query.limit > 100) {
+      query.limit = 100;
+    }
+
     if (isActive !== undefined && isActive !== 'true' && isActive !== 'false') {
       throw new BadRequestException('Invalid value for "isActive". Use "true" or "false".');
     }
-    const result = await this.usersService.findAll({ page, limit }, isActive === 'true');
+
+    const result = await this.usersService.findAll(
+      query,
+      isActive === 'true',
+    );
+
     if (!result) throw new InternalServerErrorException('Could not retrieve users');
 
     return new SuccessResponseDto('Users retrieved successfully', result);
@@ -77,5 +86,5 @@ export class UsersController {
     const user = await this.usersService.updateProfile(id, file.filename);
     if (!user) throw new NotFoundException('User not found');
     return new SuccessResponseDto('Profile image updated', user);
-  }
+  } 
 }

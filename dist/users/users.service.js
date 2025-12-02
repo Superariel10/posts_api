@@ -46,48 +46,127 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
+const bcrypt = __importStar(require("bcrypt"));
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const nestjs_typeorm_paginate_1 = require("nestjs-typeorm-paginate");
 const user_entity_1 = require("./user.entity");
-const bcrypt = __importStar(require("bcrypt"));
 let UsersService = class UsersService {
     userRepository;
     constructor(userRepository) {
         this.userRepository = userRepository;
     }
     async create(createUserDto) {
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = this.userRepository.create({
-            ...createUserDto,
-            password: hashedPassword,
-        });
-        return this.userRepository.save(user);
+        try {
+            const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+            const user = this.userRepository.create({
+                ...createUserDto,
+                password: hashedPassword,
+            });
+            return await this.userRepository.save(user);
+        }
+        catch (err) {
+            console.error('Error creating user:', err);
+            return null;
+        }
     }
-    findAll() {
-        return this.userRepository.find();
+    async findAll(queryDto, isActive) {
+        try {
+            const { page, limit, search, searchField, sort, order } = queryDto;
+            const query = this.userRepository.createQueryBuilder('user');
+            if (isActive !== undefined) {
+                query.andWhere('user.isActive = :isActive', { isActive });
+            }
+            if (search) {
+                if (searchField) {
+                    switch (searchField) {
+                        case 'username':
+                            query.andWhere('user.username ILIKE :search', {
+                                search: `%${search}%`,
+                            });
+                            break;
+                        case 'email':
+                            query.andWhere('user.email ILIKE :search', {
+                                search: `%${search}%`,
+                            });
+                            break;
+                        default:
+                            query.andWhere('(user.username ILIKE :search OR user.email ILIKE :search)', { search: `%${search}%` });
+                    }
+                }
+                else {
+                    query.andWhere('(user.username ILIKE :search OR user.email ILIKE :search)', { search: `%${search}%` });
+                }
+            }
+            if (sort) {
+                query.orderBy(`user.${sort}`, (order ?? 'ASC'));
+            }
+            return await (0, nestjs_typeorm_paginate_1.paginate)(query, { page, limit });
+        }
+        catch (err) {
+            console.error('Error retrieving users:', err);
+            return null;
+        }
     }
-    findOne(id) {
-        return this.userRepository.findOne({ where: { id } });
+    async findOne(id) {
+        try {
+            return await this.userRepository.findOne({ where: { id } });
+        }
+        catch (err) {
+            console.error('Error finding user:', err);
+            return null;
+        }
     }
     async findByUsername(username) {
-        return this.userRepository.findOne({ where: { username } });
+        try {
+            return await this.userRepository.findOne({ where: { username } });
+        }
+        catch (err) {
+            console.error('Error finding user by username:', err);
+            return null;
+        }
     }
     async update(id, updateUserDto) {
-        const user = await this.userRepository.findOne({ where: { id } });
-        if (!user)
-            return null;
-        if (updateUserDto.password) {
-            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+        try {
+            const user = await this.userRepository.findOne({ where: { id } });
+            if (!user)
+                return null;
+            if (updateUserDto.password) {
+                updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+            }
+            Object.assign(user, updateUserDto);
+            return await this.userRepository.save(user);
         }
-        Object.assign(user, updateUserDto);
-        return this.userRepository.save(user);
+        catch (err) {
+            console.error('Error updating user:', err);
+            return null;
+        }
     }
     async remove(id) {
-        const user = await this.userRepository.findOne({ where: { id } });
-        if (!user)
+        try {
+            const user = await this.findOne(id);
+            if (!user)
+                return null;
+            return await this.userRepository.remove(user);
+        }
+        catch (err) {
+            console.error('Error deleting user:', err);
             return null;
-        return this.userRepository.remove(user);
+        }
+    }
+    async updateProfile(id, filename) {
+        try {
+            const user = await this.findOne(id);
+            if (!user)
+                return null;
+            user.profile = filename;
+            return await this.userRepository.save(user);
+        }
+        catch (err) {
+            console.error('Error updating user profile image:', err);
+            return null;
+        }
     }
 };
 exports.UsersService = UsersService;
