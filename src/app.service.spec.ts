@@ -16,14 +16,16 @@ describe('AppService',() => {
     });
 
     it('getHello() deberia retornar el mensaje esperado', () => {
-        expect(service.getHello()).toBe(
-            'Hello World desde los poderosos programadores del tercer semestre',
+        expect(service.getHealth()).toBe(
+            {
+                service:"posts-api service",
+                message:"Online"
+            },
         );
     });
 
-    it('getHello() deberia retornar un string no vacio', () => {
-        const result = service.getHello();
-        expect(typeof result).toBe('string');
-        expect(result.length).toBeGreaterThan(0);
+    it('getHello() deberia retornar un objeto', () => {
+        const result = service.getHealth();
+        expect(typeof result).toBe('object');
     });
 });
