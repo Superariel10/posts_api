@@ -4,12 +4,13 @@ import { Model, Types } from 'mongoose';
 import { Curso } from './schemas/curso.schema';
 import { Contenido } from './schemas/contenido.schema';
 import { CreateCursoDto } from './dto/create-curso.dto';
-
+export type ContenidoDocument = Contenido & Document;
+export type CursoDocument = Curso & Document;
 @Injectable()
 export class CursosService {
   constructor(
-    @InjectModel(Curso.name) private readonly cursoModel: Model<Curso>,
-    @InjectModel(Contenido.name) private readonly contenidoModel: Model<Contenido>,
+    @InjectModel(Curso.name) private readonly cursoModel: Model<CursoDocument>,
+    @InjectModel(Contenido.name) private readonly contenidoModel: Model<ContenidoDocument>,
   ) {}
 
   async create(dto: CreateCursoDto): Promise<Curso | null> {
