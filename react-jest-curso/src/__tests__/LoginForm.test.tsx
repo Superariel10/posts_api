@@ -1,50 +1,64 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import UserCard from "../components/UserCard";
+import LoginForm from "../components/LoginForm";
 
-describe("UserCard (fetch async)", () => {
+global.fetch = jest.fn();
+
+describe("LoginForm (validación + fetch)", () => {
   beforeEach(() => {
-    (fetch as jest.Mock).mockReset();
+    (fetch as jest.Mock).mockClear();
   });
 
-  test("muestra loading y luego éxito", async () => {
+  test("valida: username requerido", async () => {
     const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByPlaceholderText("password"), "1234");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("username requerido");
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
-    (fetch as jest.Mock).mockImplementation(() =>
-      new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            ok: true,
-            json: async () => ({ id: 1, name: "Ana", email: "ana@mail.com" })
-          });
-        }, 100);
-      })
-    );
+  test("valida: password mínimo 4", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm />);
 
-    render(<UserCard />);
+    await user.type(screen.getByPlaceholderText("username"), "ana");
+    await user.type(screen.getByPlaceholderText("password"), "12");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
 
-    await user.click(screen.getByRole("button", { name: "Cargar" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("password mínimo 4");
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
-    // Ahora sí, como la API tarda 100ms, React estará en estado "loading" cuando esto se ejecute
-    expect(screen.getByRole("status")).toHaveTextContent("Cargando...");
+  test("submit éxito llama onSuccess", async () => {
+    const user = userEvent.setup();
+    const onSuccess = jest.fn();
 
-    // Espera a que aparezca data (findBy espera hasta que la promesa del fetch se resuelva)
-    expect(await screen.findByLabelText("user-data")).toBeInTheDocument();
-    expect(screen.getByText("Ana")).toBeInTheDocument();
-    expect(screen.getByText("ana@mail.com")).toBeInTheDocument();
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true })
+    });
 
-    // y loading ya no debe estar
+    render(<LoginForm onSuccess={onSuccess} />);
+
+    await user.type(screen.getByPlaceholderText("username"), "  ana  ");
+    await user.type(screen.getByPlaceholderText("password"), "1234");
+  
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
     await waitFor(() => {
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(onSuccess).toHaveBeenCalledTimes(1);
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith("/api/user/1");
+
+    const [url, options] = (fetch as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/auth/login");
+    expect(JSON.parse(options.body)).toEqual({ username: "ana", password: "1234" });
   });
 
-  // ... el resto de tests los puedes dejar igual ...
-  test("muestra error si HTTP no ok", async () => {
+  test("submit error muestra alert", async () => {
     const user = userEvent.setup();
 
     (fetch as jest.Mock).mockResolvedValue({
@@ -52,23 +66,11 @@ describe("UserCard (fetch async)", () => {
       json: async () => ({})
     });
 
-    render(<UserCard />);
+    render(<LoginForm />);
 
-    await user.click(screen.getByRole("button", { name: "Cargar" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el usuario");
-    expect(screen.queryByLabelText("user-data")).not.toBeInTheDocument();
-  });
-
-  test("muestra error si fetch rechaza", async () => {
-    const user = userEvent.setup();
-
-    (fetch as jest.Mock).mockRejectedValue(new Error("network"));
-
-    render(<UserCard />);
-
-    await user.click(screen.getByRole("button", { name: "Cargar" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el usuario");
+    await user.type(screen.getByPlaceholderText("username"), "ana");
+    await user.type(screen.getByPlaceholderText("password"), "1234");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("login falló");
   });
 });
